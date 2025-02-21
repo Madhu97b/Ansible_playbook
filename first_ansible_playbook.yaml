@@ -1,0 +1,22 @@
+---
+ - hosts: localhost  #on which hosts we want to run the yaml file
+   become: yes #Instead of using sudo we use become here admin permissin
+   ignore_errors: yes #If any errors come also this file continues excut
+   tasks: #A task is a unit of work
+     - name: executing the uptime command  
+       shell: #if we want to run a command then we use shell module
+         "uptime" #command
+       register: upt #register is used to save the output to a variable
+
+     - name: Displaying uptime command out
+       debug: #debug is a module which is used to print works like echo
+         msg: "{{ upt['stdout_lines'] }}" #In shell we will use the $ to access the var
+
+     - name: executing kernel version command
+       shell:
+         "uname -r"
+       register: kernb
+
+     - name: displaying kernel version
+       debug:
+          msg: "{{kernb['stdout_lines'][0]}}"

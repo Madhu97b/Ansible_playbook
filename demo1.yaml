@@ -1,0 +1,14 @@
+---
+ - hosts: localhost
+   become: yes
+   ignore_errors: yes
+   tasks:
+    - name: Executing the Commands
+      shell: 
+         "whoami"
+      register: w
+
+    - name: Displaying the commands
+      debug:
+         msg: "I'm {{ w.stdout}} user"
+

@@ -1,0 +1,13 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+   tasks:
+     - name: Shutdowning server
+       shell:
+         shutdown now
+       register: shutdown
+
+     - name: executing shutdown now
+       debug:
+         msg: "{{shutdown}}"

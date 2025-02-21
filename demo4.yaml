@@ -1,0 +1,42 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+   vars: #vars acts as a global variables we can use throughout the code inside this what we use we can access throughout the code
+     services: ['sshd','httpd','cups','ntpd','crond'] #Represented in list
+   tasks:
+     - name: Excuting the services
+       shell:
+         "service {{item}} status"
+       register: serv_state #register is also a variable
+       with_items: #with_items is nothing but for loop
+           - "{{services}}" #we have to mention this in "{{}}"
+
+     - name: displaying the status
+       debug:
+         msg: "{{serv_state}}"
+
+     - name: Capturing the details
+       set_fact: 
+            serv: "{{serv_state['results']}}"
+
+     - name: capturing the running services
+       debug:
+         msg: "{{item.item}} is running"  #why we mention item.item here means inside with_items we mentioned serv it will become item now,Another item will be services such as ['cron','ntp','                                                                                                                                                                                    cups']
+
+       with_items: #inside the with_items if we mention any variable we'll consider that as item
+          - "{{serv}}"
+
+       when:
+          - item.rc == 0 # inside the item(services such as 'cron','cup','ntp') we will find the rc if service is running rc will be 0,rc means return code.If the service is not running rc 
+                         # will be non-zero numbers. 
+
+     - name: capturing the stopped services
+       debug:
+          msg: "{{item.item}} is stopped"
+
+       with_items: 
+          - "{{serv}}"
+
+       when:
+          - item.rc != 0

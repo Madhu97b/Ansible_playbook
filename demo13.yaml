@@ -1,0 +1,68 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+
+
+   tasks:
+     - name: Taking the user Input from the user
+       pause:
+         prompt: "Enter the username"
+       register: ui
+
+     - name: capturing the user Input from the user
+       set_fact:
+         user: "{{ui['user_input']}}"
+
+     - name: Displaying the set_fact which is getting from register
+       debug:
+         msg: "{{user}}"
+
+# we are going to check if the username entered by the user is present inside server or not     
+
+     - name: Checking the user present inside the server
+       shell: "getent passwd {{user}}"
+       register: sh_ui
+
+     - name: Displaying the user if present 
+       debug:
+         msg: 
+           - "The user present inside the server is {{sh_ui}}"
+
+     - name: Displaying the user if present in single line
+       debug:
+         msg:
+           - "The user present inside the server is:- {{sh_ui['stdout_lines']}}"
+
+# how to verify if user is present or not logically???
+     - name: Displaying the user logically present
+       debug:
+         msg: #why we use length here Because to get the length of the line works as "wc -l"
+           - "Logic for the user present inside the server if present returns 1 if not 0:-"
+           - "Logic for the user present inside the server:---  {{sh_ui['stdout_lines']|length}}"
+
+# we need to use the two statements to display below for present or not so we need set_fact here to take the output as input to the next lines
+     - name: setting the set_fact  
+       set_fact:
+          upon: "{{sh_ui['stdout_lines']|length}}"
+
+     - name: Displaying if the user present inside the server logically
+       debug:
+         msg: #Why we use int here ?? Because 1 and 0 are integers so we use int here 
+           - "user is present:--       {{upon}}"
+
+       when:
+           - upon | int == 1
+
+     - name: Displaying if the user not present inside the server logically
+       debug:
+         msg:
+           - "user is not present:--   {{upon}}"
+
+       when:
+           - upon | int == 0
+        
+
+
+
+              

@@ -1,0 +1,180 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+   vars:
+       Author: ['Madhu B']  
+   vars_files:  
+     #Author: ['Madhu B']
+     - y1.yaml
+   tasks:
+     - name: Taking the user Input from the user
+       pause:
+         prompt: "Enter the username"
+       register: ui #ui means user input
+     
+     - name: Displaying the ui without user_input
+       debug:
+         msg: "{{ui}}"
+
+     - name: capturing the user Input from the user
+       set_fact:
+         user: "{{ui['user_input']}}"
+
+     - name: Displaying the set_fact which is getting from register
+       debug:
+         msg: "{{user}}"
+
+# we are going to check if the username entered by the user is present inside server or not     
+
+     - name: Checking the user present inside the server
+       shell: "getent passwd {{user}}"
+       register: sh_ui #sh_ui means shell user input
+
+     - name: Displaying the user if present 
+       debug:
+         msg: 
+           - "The user present inside the server is {{sh_ui}}"
+
+     - name: Displaying the user if present in single line
+       debug:
+         msg:
+           - "The user present inside the server is:- {{sh_ui['stdout_lines']}}"
+
+# how to verify if user is present or not logically???
+     - name: Displaying the user logically present
+       debug:
+         msg: #why we use length here Because to get the length of the line works as "wc -l"
+           - "Logic for the user present inside the server if present returns 1 if not 0:-"
+           - "Logic for the user present inside the server:---  {{sh_ui['stdout_lines']|length}}"
+
+# we need to use the two statements to display below for present or not so we need set_fact here to take the output as input to the next lines
+     - name: setting the set_fact  
+       set_fact:
+          upon: "{{sh_ui['stdout_lines']|length}}" #upon means user present or not
+
+     - name: Displaying if the user present inside the server logically
+       debug:
+         msg: #Why we use int here ?? Because 1 and 0 are integers so we use int here 
+           - "user is present:--       {{upon}}"
+
+       when:
+           - upon | int == 1
+
+     - name: Displaying if the user not present inside the server logically
+       debug:
+         msg:
+           - "user is not present:--   {{upon}}"
+
+       when:
+           - upon | int == 0
+        
+
+# If a user is present i want to display the complete details of the user using "chage -l" command 
+
+     - name: using shell module to get the complete details of the user if present inside the server.
+       shell:
+         " chage -l {{user}}" #here we are using the user because user variabale contains what we enter at begining as a username.command is :- chage -l username so we use user here.
+       when:
+           - upon | int == 1    
+       register: chage_details 
+
+     - name: displaying the complete details of the user if present inside the server.
+       debug:
+         msg: "{{chage_details}}"
+       when:
+         - upon | int == 1
+
+# we are going to create the user by taking the user input also we take the userid through user input, display it if user got created, setting the passwd for the created user,and if we select   no it must display  you have choosen no so user is not going to create.
+
+
+     - name: Taking the user input for creating the user
+       pause:
+          prompt: "Enter 'yes' to create the user"
+       register: user_create
+       when:
+         - upon | int == 0
+
+     - name: Taking the user id for the new user
+       pause:
+          prompt: "Enter the user id for the user"
+       register: user_id
+       when:
+         - upon | int == 0
+         - user_create['user_input'] == 'yes'
+
+     - name: Taking the user name for the new user 
+       user:
+        name: "{{user}}"
+        uid:  "{{user_id['user_input']}}" # if we didnot mention ['user_input'] here it will consider as dictionary and generates error stating that can't able to convert to int from dict.
+        state: present
+       register: Taking_user
+       when:
+         - user_create is defined
+           #- user_id is defined
+         - user_create['user_input'] == 'yes' # I forgot to mention yes in '' string
+         - upon | int == 0
+
+     - name: Verifying the user name if created or not
+       shell:
+          "getent passwd {{user}}"
+       register: verify_user
+       when:
+         - user_create is defined
+           #- user_id is defined
+         - upon | int == 0
+
+     - name: Displaying the username we created
+       debug:
+         msg: "{{verify_user['stdout_lines']}}"
+       when:
+         - user_create is defined
+           #- user_id is defined
+         - upon | int == 0
+
+       
+
+# Setting the password for the user we created now
+
+     - name: Setting the password for the user
+       pause:
+         prompt: "Enter the password"
+         echo: no 
+       register: passwd
+       when:
+         - user_create is defined
+         - user_create['user_input'] == 'yes'
+
+     - name: Passing the passwd for the user using shell module
+       shell:
+          "echo {{passwd['user_input']}} | passwd {{ui['user_input']}} --stdin" # Remember the command passwd username so we have to pass the passwd from user input to the command using |
+          # - "Displaying if worked correctly or not : -- echo$?"
+
+       register: passwd_pass
+
+            
+     - name: Displaying confirmation for the passwd is set or passed.
+       debug:
+         msg: 
+          - "passwd is setted :- {{passwd_pass['stdout_lines']}}"
+          - "Thank you so much for using my ansible-playbook "
+          - "By Author:- Madhu B"
+          - "{{message}}"
+          - "{{Author}}"
+
+
+       when:
+          - passwd is defined
+               
+     - name: u didn't selected the yes 
+       debug:
+         msg: 
+          - "you have choosen not to create the user:-- {{ui['user_input']}}"
+          - "Thank you so much for using my ansible-playbook "
+          - "By Author:- {{Author}}"  
+          - "{{message}}"
+          - "{{Author}}"
+
+       when:
+          - user_create['user_input'] != 'yes'    
+

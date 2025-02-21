@@ -1,0 +1,38 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+
+
+   tasks:
+     - name: Taking the user Input from the user
+       pause:
+         prompt: "Enter the username"
+       register: ui
+
+     - name: capturing the user Input from the user
+       set_fact:
+         user: "{{ui['user_input']}}"
+
+     - name: Displaying the set_fact which is getting from register
+       debug:
+         msg: "{{user}}"
+
+# we are going to check if the username entered by the user is present inside server or not     
+
+     - name: Checking the user present inside the server
+       shell: "getent passwd {{user}}"
+       register: sh_ui
+
+     - name: Displaying the user if present 
+       debug:
+         msg: 
+           - "The user present inside the server is {{sh_ui}}"
+
+     - name: Displaying the user if present in single line
+       debug:
+         msg:  #we have to mention the stdout_lines here
+           - "The user present inside the server is:- {{sh_ui['stdout_lines']}}"
+
+
+              

@@ -1,0 +1,15 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+
+
+   tasks:
+     - name: Taking the user Input from the user
+       pause:
+         prompt: "Enter the username"
+       register: ui
+
+     - name: capturing the user Input from the user
+       debug:
+         msg: "{{ui}}"

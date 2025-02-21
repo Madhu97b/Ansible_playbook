@@ -1,0 +1,30 @@
+---
+ - hosts: localhost
+   become: yes
+   ignore_errors: yes
+   tasks:
+     - name: Take user input
+       pause: #To take the userInput we'll use the pause module
+         prompt: "Enter '1' for uptime '2' for kernel version '3' for memory details '4' for date"
+       register: opt #command output saved in register
+
+         #     - name: Displaying the user input
+         #       debug:
+         #         msg: "{{opt}}"
+
+     - name: Display User Input From the above Output of opt
+       set_fact: #part of the register output we are saving in set_fact
+         opt_con: "{{ opt['user_input']|int }}" #convert string to int
+
+     - name: Executing the uptime command
+       shell:
+             "uptime" 
+       when:
+         - opt_con == 1 
+       register: upt_detail
+
+     - name: Displaying the uptime command
+       debug:
+         msg: "{{upt_detail['stdout_lines'][0]}}"
+       when:
+         - upt_detail == 1

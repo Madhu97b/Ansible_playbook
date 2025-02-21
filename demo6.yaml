@@ -1,0 +1,129 @@
+---
+ - hosts: all
+   become: yes
+   ignore_errors: yes
+   vars: #vars acts as a global variables we can use throughout the code inside this what we use we can access throughout the code
+     services: ['sshd','httpd','cups','ntpd','crond'] #Represented in list
+     running_list: []
+     stopped_list: []
+     ss: []
+   tasks:
+     - name: Excuting the services
+       shell:
+         "service {{item}} status"
+       register: serv_state #register is also a variable
+       with_items: #with_items is nothing but for loop
+           - "{{services}}" #we have to mention this in "{{}}"
+
+     - name: displaying the status
+       debug:
+         msg: "{{serv_state}}" #here we are not using the -
+
+     - name: Capturing the details of running and stopped services
+       set_fact: #Below we are not using the -
+            serv: "{{serv_state['results']}}"  #inside the main output or variable (serv_state) we want the part from it (serv).
+
+     - name: displaying the running services
+       debug:
+         msg: "{{item.item}} is running"  #why we mention item.item here means inside with_items we mentioned serv it will become item now,Another item will be services such as ['cron','ntp','                                                                                                                                                                                    cups']
+
+       with_items: #inside the with_items if we mention any variable we'll consider that as item
+          - "{{serv}}"
+
+       when:
+          - item.rc == 0 # inside the item(services such as 'cron','cup','ntp') we will find the rc if service is running rc will be 0,rc means return code.If the service is not running rc
+                         # will be non-zero numbers.
+
+     - name: displaying the stopped services
+       debug:
+          msg: "{{item.item}} is stopped"
+
+       with_items:
+          - "{{serv}}"
+
+       when:
+          - item.rc != 0
+
+     - name: Capturing the details of running services and passing the values to the empty list running_list.
+       set_fact:
+           running_list: "{{running_list + [item.item]}}" # we have to concatenate one list with other list only.so we need to convert the item.item into list.
+       when: #when is a condition
+          - item.rc == 0
+       with_items:
+          - "{{serv}}"
+
+     - name: Displaying the running services after passing the values to the empty list.
+       debug:
+         msg: "running services are:- {{running_list}}"
+
+     
+          
+     - name: Capturing the stopped services and passing the value to the empty stopped_list
+       set_fact:
+           stopped_list: "{{stopped_list + [item.item]}}" #we can give name the variable with anything we want but here we are taking empty list we are passing to it so we are taking list name                                                                                                                                                                                        here
+       when:      
+          - item.rc != 0
+       with_items:
+            "{{serv}}"
+
+     - name: Displaying the stopped services after passing the values to the empty list.
+       debug:
+         msg: "stopped services are:- {{stopped_list}}"
+
+       
+
+            #Starting the stopped services.
+     - name: Starting the stopped services
+       service:
+         name: "{{item}}"
+         state: started
+
+       with_items:
+         "{{stopped_list}}"
+       register: started_serv
+
+         #- name: capturing the started service from the stopped state
+         #debug:
+         #msg: 
+         # - "{{started_serv['results']}}"
+             # - "stopped services are:-{{stopped_list}}"
+             # - "Running services are:-{{running_list}}"
+
+         #     - name: Displaying the started services
+         #       set_fact:
+         #ss: "{{ ss + ['item + item'] }}"
+         #              ss: "{{started_serv['results']}}"
+         #       with_items:
+         #         - "{{ss}}"
+
+         #       when:
+         #- item.rc == 0
+         
+         #All the above which we commented are not necessary
+
+
+       
+
+       
+     - name: Taking input from the started_serv register
+       debug:
+         msg: "running services are:- {{item.item}}"
+       with_items:
+         # - "{{ss}}"
+         - "{{started_serv['results']}}"
+       when: item.changed
+
+#Next Edits in the code:-
+#
+#
+  # we need to create one global variable with empty list under vars and Here pass all the item.item as a list and concatenate it with empty list then print it using the debug we will get the single line output.
+#
+# After that using pause module take using input if he press yes the service will be started no means service won't start.
+#
+# After that if he press yes services will start next time if he press no service must be stopped.
+       
+
+           
+
+      
+    

@@ -1,0 +1,98 @@
+---
+- hosts: all
+  become: yes
+  ignore_errors: yes
+  tasks:
+    - name: Take user input
+      pause:
+        prompt: "Enter '1' for uptime, '2' for kernel version, '3' for memory details, '4' for physical and swap memory seperately and '5' for date"
+      register: opt
+
+    - name: Displaying the register variable
+      debug:
+        msg: "{{opt}}"
+
+    - name: Display User Input From the above Output of opt
+      set_fact:
+        #opt_con: "{{ opt['user_input']}}"
+        opt_con: "{{opt.user_input}}"
+
+    - name: Verifying the input number
+      debug:
+        msg: The Entered Number is "{{opt_con}}"
+
+    - name: Executing the uptime command
+      shell: "uptime"
+      when: 
+       - opt_con == "1"
+      register: upt_detail
+
+    - name: Displaying the uptime command
+      debug:
+        msg: "{{ upt_detail['stdout_lines'][0] }}"
+      when: 
+       - opt_con == "1"
+
+    - name: Executing the kernel version
+      shell:
+            "uname -r"
+      when: 
+       - opt_con == "2"
+      register: ker_ver
+
+    - name: Displaying the output of the kernel version
+      debug:
+         msg: "{{ker_ver['stdout_lines'][0]}}"
+      when: 
+       - opt_con == "2"
+
+    - name: Executing the memory details
+      shell:
+            "free "
+      when:
+       - opt_con == "3"
+      register: mem_detail
+
+    - name: Displaying the Mem details
+      debug:
+        msg: "{{mem_detail['stdout_lines']}}"
+      when:
+       - opt_con == "3"
+          
+         # I want to display the physical mem and swap seperately so i need to use the register and set_fact
+
+    - name: Executing physical and mem seperately
+      shell:
+            "free "
+      when:
+        - opt_con == "4"
+      register: ps_details
+
+    - name: set_fact the physical and mem seperately
+      set_fact:
+        ph_con: "{{ps_details['stdout_lines']}}"
+
+    - name: Displaying the physical mem
+      debug:
+        msg: "{{ps_details['stdout_lines'][1]}}"
+      when:
+        - opt_con == "4"
+
+    - name: Displaying the swap mem
+      debug:
+        msg: "{{ps_details['stdout_lines'][2]}}"
+      when:
+        - opt_con == "4"
+
+    - name: Executing the date command
+      shell:
+            "date"
+      when:
+        - opt_con == "5"
+      register: date_detail
+
+    - name: Displaying the date command
+      debug:
+        msg: "{{date_detail['stdout_lines']}}"
+      when:
+        - opt_con == "5"

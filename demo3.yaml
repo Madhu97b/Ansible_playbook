@@ -1,0 +1,20 @@
+---
+ - hosts: localhost
+   become: yes
+   ignore_errors: yes
+   vars: #vars acts as a global variables we can use throughout the code inside this what we use we can access throughout the code
+     services: ['cron','ntp','cups'] #Represented in list 
+   tasks:
+     - name: Excuting the services
+       shell:
+         "service {item} status"
+       register: serv_state
+       with_items: #with_items is nothing but for loop
+           - "{{services}}" #we have to mention this in "{{}}"
+
+     - name: displaying the status
+       debug:
+         msg: "{{serv_state}}"
+
+
+
